@@ -1,10 +1,12 @@
 using UnityEngine;
 using System.Collections;
+using Random = UnityEngine.Random;
 
 public class BoxSpawner : MonoBehaviour
 {
     [SerializeField] private Box _boxPrefab;
 
+    [Header("Spawn Zone Settings")] 
     [SerializeField] private float _spawnTime = 10f;
     [SerializeField] private float _spawnHeight = 10f;
     [SerializeField] private float _spawnRangeX = 222f;
@@ -13,6 +15,19 @@ public class BoxSpawner : MonoBehaviour
     private void Start()
     {
         StartCoroutine(DelaySpawn());
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        Vector3 startPosition = transform.position;
+        
+        Gizmos.DrawLine(startPosition, new Vector3(startPosition.x, startPosition.y, _spawnRangeZ));
+        Gizmos.DrawLine(startPosition, new Vector3(_spawnRangeX, startPosition.y, startPosition.z));
+        Gizmos.DrawLine(new Vector3(startPosition.x, startPosition.y, _spawnRangeZ), 
+            new Vector3(_spawnRangeX, startPosition.y, _spawnRangeZ));
+        Gizmos.DrawLine(new Vector3(_spawnRangeX, startPosition.y, startPosition.z), 
+            new Vector3(_spawnRangeX, startPosition.y, _spawnRangeZ));
     }
 
     private IEnumerator DelaySpawn()
@@ -28,6 +43,7 @@ public class BoxSpawner : MonoBehaviour
     private void Spawn()
     {
         Vector3 position = transform.position;
+
         Vector3 spawnPosition = new Vector3(Random.Range(position.x, _spawnRangeX), _spawnHeight,
             Random.Range(position.z, _spawnRangeZ));
 
