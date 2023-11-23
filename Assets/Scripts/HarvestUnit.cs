@@ -3,42 +3,76 @@ using UnityEngine;
 
 public class HarvestUnit : MonoBehaviour
 {
-    [SerializeField] private float _speed = 2f;
-    [SerializeField] private Transform _target;
+    [SerializeField] private float _pathTime = 5f;
+    [SerializeField] private float _runningTime;
 
-    private bool _isBusy = false;
+    [SerializeField] private Transform _target;
+    [SerializeField] private Transform _base;
+    [SerializeField] private Vector3 _startPosition;
+    [SerializeField] private Vector3 _direction;
+
+    [SerializeField] private float _collectDistance = 10f;
+    [SerializeField] private Transform _cargoPlatform;
+    [SerializeField] private LayerMask _cargoMask;
+
+    [SerializeField] private bool _isBusy = false;
+    [SerializeField] private bool _hasCargo = false;
+
+    private Ray _collectRay;
+
     public bool IsBusy => _isBusy;
 
     private void Update()
     {
         Move();
+        Collect();
     }
 
     public void SetTarget(Transform target)
     {
+        _runningTime = 0;
         _target = target;
-        // if (target)
-        // {
-        //     Vector3 direction = target.position - transform.position;
-        //     _isBusy = true;
-        //
-        //     while (transform.position.x < target.position.x)
-        //     {
-        //         //transform.Rotate(direction * (_speed * Time.deltaTime));
-        //
-        //         transform.position = Vector3.Lerp(transform.position, target.position, Time.deltaTime);
-        //         //transform.Translate(direction.normalized * (_speed * Time.deltaTime));
-        //     }
-        // }
+        _startPosition = transform.position;
+        _isBusy = true;
     }
 
     private void Move()
     {
         if (_target)
         {
-            transform.position = Vector3.Lerp(transform.position, _target.position, Time.deltaTime);
+            transform.LookAt(_target);
+            _direction = _target.position - transform.position;
 
-            Debug.DrawLine(transform.position, _target.position, Color.magenta, 100f);
+            _runningTime += Time.deltaTime;
+            transform.position = Vector3.Lerp(_startPosition, _target.position, _runningTime / _pathTime);
         }
+    }
+
+    private void Collect()
+    {
+        if (_hasCargo)
+            return;
+
+        RaycastHit hit;
+        _collectRay = new Ray(transform.position, _direction);
+        Debug.DrawRay(transform.position, _direction, Color.yellow, _collectDistance);
+
+        if (Physics.Raycast(_collectRay, out hit, _collectDistance, _cargoMask))
+        {
+            _target = null;
+            hit.collider.GetComponent<Box>().Load(_cargoPlatform);
+            _hasCargo = true;
+        }
+
+        if (_hasCargo)
+        {
+            Return();
+        }
+    }
+
+    private void Return()
+    {
+        SetTarget(_base);
+        transform.LookAt(_target);
     }
 }
