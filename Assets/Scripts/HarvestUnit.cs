@@ -1,31 +1,31 @@
-using System;
 using UnityEngine;
 
 public class HarvestUnit : MonoBehaviour
 {
     [SerializeField] private float _pathTime = 5f;
     [SerializeField] private float _runningTime;
+    [SerializeField] private float _loadDistance = 5f;
 
-    [SerializeField] private Transform _target;
     [SerializeField] private Transform _base;
-    [SerializeField] private Vector3 _startPosition;
-    [SerializeField] private Vector3 _direction;
-
-    [SerializeField] private float _collectDistance = 10f;
     [SerializeField] private Transform _cargoPlatform;
     [SerializeField] private LayerMask _cargoMask;
+    [SerializeField] private LayerMask _baseMask;
 
-    [SerializeField] private bool _isBusy = false;
-    [SerializeField] private bool _hasCargo = false;
-
+    private Transform _target;
+    private Vector3 _startPosition;
+    private Vector3 _direction;
+    private Box _box;
     private Ray _collectRay;
+
+    private bool _isBusy = false;
+    private bool _hasCargo = false;
 
     public bool IsBusy => _isBusy;
 
     private void Update()
     {
         Move();
-        Collect();
+        TryInteract();
     }
 
     public void SetTarget(Transform target)
@@ -46,28 +46,57 @@ public class HarvestUnit : MonoBehaviour
             _runningTime += Time.deltaTime;
             transform.position = Vector3.Lerp(_startPosition, _target.position, _runningTime / _pathTime);
         }
+
+        if (_box)
+        {
+            _box.transform.localPosition = Vector3.zero;
+        }
     }
 
-    private void Collect()
+    private void TryInteract()
     {
-        if (_hasCargo)
-            return;
-
         RaycastHit hit;
         _collectRay = new Ray(transform.position, _direction);
-        Debug.DrawRay(transform.position, _direction, Color.yellow, _collectDistance);
 
-        if (Physics.Raycast(_collectRay, out hit, _collectDistance, _cargoMask))
+        if (Physics.Raycast(_collectRay, out hit, _loadDistance, _cargoMask))
         {
-            _target = null;
-            hit.collider.GetComponent<Box>().Load(_cargoPlatform);
-            _hasCargo = true;
+            if (hit.transform == _target && _hasCargo == false)
+            {
+                Collect(hit);
+            }
         }
 
-        if (_hasCargo)
+        if (Physics.Raycast(_collectRay, out hit, _loadDistance, _baseMask))
         {
+            if (_hasCargo)
+            {
+                Unload(hit);
+            }
+        }
+    }
+
+    private void Collect(RaycastHit hit)
+    {
+        _target = null;
+        _box = hit.collider.gameObject.GetComponent<Box>().Load(_cargoPlatform);
+        _hasCargo = true;
+
+        if (_box)
             Return();
-        }
+    }
+
+    private void Unload(RaycastHit hit)
+    {
+        _target = null;
+
+        _cargoPlatform.DetachChildren();
+        _box.Unload();
+        _box = null;
+
+        hit.collider.gameObject.GetComponent<Base>().ReceiveCargo();
+
+        _hasCargo = false;
+        _isBusy = false;
     }
 
     private void Return()

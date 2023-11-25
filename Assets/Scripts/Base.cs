@@ -1,10 +1,12 @@
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Base : MonoBehaviour
 {
+    [SerializeField] Text _collectedCargoCount;
+    
     private HarvestUnit[] _units;
-    private Queue<Box> _resources;
+    private int _cargoCount;
 
     private void Start()
     {
@@ -20,6 +22,12 @@ public class Base : MonoBehaviour
         }
     }
 
+    public void ReceiveCargo()
+    {
+        _cargoCount++;
+        _collectedCargoCount.text = $"Collected: {_cargoCount} boxes";
+    }
+
     private void TrySendUnit(HarvestUnit unit)
     {
         Box target = FindTarget();
@@ -28,9 +36,6 @@ public class Base : MonoBehaviour
         {
             target.Mark();
             unit.SetTarget(target.transform);
-            Debug.Log("unit sent");
-            Debug.Log(target.transform.position);
-            Debug.Log(unit.name);
         }
     }
 
@@ -39,10 +44,7 @@ public class Base : MonoBehaviour
         Box target = FindObjectOfType<Box>();
 
         if (target && target.IsMarked == false && target.IsOnGround)
-        {
-            Debug.Log("Target found");
             return target;
-        }
 
         return null;
     }
